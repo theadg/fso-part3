@@ -1,9 +1,12 @@
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+require('dotenv').config()
+const { Note, store, index } = require('./models/person')
 
 const app = express()
 
+// const Note
 app.use(cors())
 
 /**
@@ -64,9 +67,7 @@ app.get('/info', (request,response) => {
     `)
 })
 
-app.get('/api/persons', (request, response) => {
-    return response.json(phonebook)
-})
+app.get('/api/persons', index)
 
 app.get('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
@@ -87,29 +88,30 @@ const hasExistingName = (name) => {
     return phonebook.find(person => person.name === name)
 }
 
-app.post('/api/persons', (request, response) => {
-    const body = request.body;
+// app.post('/api/persons', (request, response) => {
+//     const body = request.body;
     
-    if (!body.name || !body.number){
-        return response.status(400).json({error: 'Incomplete details'})
-    }
-    const nameExists = hasExistingName(body.name)
+//     if (!body.name || !body.number){
+//         return response.status(400).json({error: 'Incomplete details'})
+//     }
+//     const nameExists = hasExistingName(body.name)
 
-    console.log(nameExists)
-    if (nameExists) {
-        return response.status(400).json({error: 'Name already exists'})
-    }
+//     if (nameExists) {
+//         return response.status(400).json({error: 'Name already exists'})
+//     }
 
-    const person = {
-        id: generateRandomId(),
-        name: body.name,
-        number: body.number
-    }
+//     const person = {
+//         id: generateRandomId(),
+//         name: body.name,
+//         number: body.number
+//     }
 
-    phonebook = phonebook.concat(person)
+//     phonebook = phonebook.concat(person)
 
-    return response.json(person).status(201)
-});
+//     return response.json(person).status(201)
+// });
+
+app.post('/api/persons', store);
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
