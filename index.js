@@ -2,7 +2,7 @@ const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 require('dotenv').config()
-const { Note, store, index } = require('./models/person')
+const { store, index, update, show } = require('./models/person')
 
 const app = express()
 
@@ -69,47 +69,7 @@ app.get('/info', (request,response) => {
 
 app.get('/api/persons', index)
 
-app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = phonebook.find(person => person.id === id)
-
-    if (!person) {
-        return response.status(404).end()
-    }
-
-    return response.json(person)
-})
-
-const generateRandomId = () => {
-    return Math.floor(Math.random() * 1000);
-}
-
-const hasExistingName = (name) => {
-    return phonebook.find(person => person.name === name)
-}
-
-// app.post('/api/persons', (request, response) => {
-//     const body = request.body;
-    
-//     if (!body.name || !body.number){
-//         return response.status(400).json({error: 'Incomplete details'})
-//     }
-//     const nameExists = hasExistingName(body.name)
-
-//     if (nameExists) {
-//         return response.status(400).json({error: 'Name already exists'})
-//     }
-
-//     const person = {
-//         id: generateRandomId(),
-//         name: body.name,
-//         number: body.number
-//     }
-
-//     phonebook = phonebook.concat(person)
-
-//     return response.json(person).status(201)
-// });
+app.get('/api/persons/:id', show)
 
 app.post('/api/persons', store);
 
@@ -126,11 +86,27 @@ app.delete('/api/persons/:id', (request, response) => {
     return response.status(204).end() 
 })
 
+app.put('/api/persons/:id', update)
+
 const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint'})
 }
 
 app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError'){
+        return response.status(400).send({ error: 'malformatted id'})
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
 
 app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`)

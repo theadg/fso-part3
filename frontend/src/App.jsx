@@ -72,6 +72,14 @@ const App = () => {
 
           resetShowMessage();
         })
+        .catch(error => {
+          setIsError(true);
+          setNewMessage(
+            `${error.response.data.error}`,
+            false
+          )
+
+        })
     } else {
       handleUpdate(newName, personObject);
     }

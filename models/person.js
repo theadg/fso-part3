@@ -15,8 +15,21 @@ mongoose
     })
 
 const personSchema = new mongoose.Schema({
-    name: String,
-    number: String
+    name: {
+        type: String,
+        minLength: 3,
+        required: true
+    },
+    number:{
+        type: String,
+        validate: {
+            validator: function(value) {
+                return /\d{2,3}-\d{5,9}/.test(value);
+            },
+            message: props => `${props.value} is not a valid phone number!`
+        },
+        required: true
+    }
 })
 
 // Return _id as id
@@ -32,11 +45,59 @@ personSchema.set('toJSON', {
 const Person = mongoose.model('Person', personSchema)
 
 const hasExistingName = async (name) => {
-    const person = await Person.find({ name: name });
-    return person.length;
+    const person = await Person.findOne({ name: name });
+
+    return person;
 }
 
-const store = async (request, response) => {
+const store = async (request, response, next) => {
+    const { body } = request
+    const { name, number } = body
+
+    // if (!name || !number) {
+    //     return response.status(400).json({
+    //         error: 'incomplete fields'
+    //     })
+    // }
+
+    try {
+        const existingPerson = await hasExistingName(name)
+
+        if (existingPerson){
+            existingPerson.number = number
+            existingPerson.save();
+
+            return response.json(existingPerson)
+        }
+
+        const newPerson = new Person({
+            name,
+            number
+        })
+
+        console.log('ubamot here before save')
+        await newPerson.save()
+
+        return response.json(newPerson)
+    } catch (err) {
+        console.log('ubamot here err')
+
+        return next(err)
+    }
+    
+}
+
+const index = async (request, response, next) => {
+    try {
+        const persons = await Person.find()
+
+        return response.json(persons)
+    } catch (err) {
+        next(err)
+    }
+}
+
+const update = async (request, response, next) => {
     const { body } = request
     const { name, number } = body
 
@@ -46,29 +107,42 @@ const store = async (request, response) => {
         })
     }
 
-    if (await hasExistingName(name)){
-        return response.status(400).json({error: 'Name Already Exists'})
-    }
-
-    const person = await Person.create({
+    const person = {
         name,
         number
-    })
+    }
 
-    return response.json(person)
+    try {
+        const updatedPerson = await Person.findByIdAndUpdate(
+            request.params.id,
+            person,
+            { 
+                new: true,
+                runValidators: true
+            }
+        )
+        
+        response.json(updatedPerson)
+    } catch (err){
+        next(err)
+    }
+};
+
+const show = async (request, response, next) => {
+    try {
+        const person = await Person.findById(request.params.id)
+
+        return response.json(person);
+    } catch (err) {
+        next(err)
+    }
 }
-
-const index = async (request, response) => {
-    const persons = await Person.find()
-
-    return response.json(persons)
-}
-
-
 module.exports = {
     personSchema,
     store,
-    index
+    index,
+    update,
+    show
 }
 
 
