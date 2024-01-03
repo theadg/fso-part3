@@ -97,6 +97,7 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint)
 
+// Custom Express Error Middleware
 const errorHandler = (error, request, response, next) => {
     console.error(error.message)
 
